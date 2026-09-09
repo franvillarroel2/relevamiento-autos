@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
   :root{
     --red: #E8555A;
@@ -19,6 +20,8 @@
     --border: #E9E9EC;
     --bg: #F4F4F6;
     --surface: #FFFFFF;
+    --green: #2E8B57;
+    --green-tint: #EAF6EF;
   }
   *{ box-sizing: border-box; }
   html, body{
@@ -30,339 +33,115 @@
   }
   .app{ min-height: 100vh; display:flex; flex-direction:column; }
 
-  /* ---------- TOPBAR ---------- */
   .topbar{
-    position: sticky;
-    top: 0;
-    z-index: 15;
+    position: sticky; top: 0; z-index: 15;
     background: rgba(244,244,246,0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    padding: 14px 22px;
-    flex-wrap: wrap;
-    gap: 12px;
+    display:flex; align-items:center; justify-content: space-between;
+    padding: 14px 22px; flex-wrap: wrap; gap: 12px;
   }
   .brand{ display:flex; align-items:center; gap: 10px; }
   .brand svg{ width: 32px; height: 32px; flex-shrink:0; }
   .brand-text{ line-height: 1.1; }
-  .brand-text .name{
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 0.01em;
-    text-transform: uppercase;
-  }
-  .brand-text .sub{
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    color: var(--red);
-  }
+  .brand-text .name{ font-size: 16px; font-weight: 800; letter-spacing: 0.01em; text-transform: uppercase; }
+  .brand-text .sub{ font-size: 9.5px; font-weight: 700; letter-spacing: 0.22em; color: var(--red); }
 
-  .tabs{
-    display:flex;
-    gap: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 4px;
-  }
-  .tab-btn{
-    border:none;
-    background: transparent;
-    padding: 8px 18px;
-    font-size: 13.5px;
-    font-weight: 600;
-    font-family: inherit;
-    color: var(--muted);
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-  .tab-btn.active{
-    background: var(--ink);
-    color: var(--surface);
-  }
+  .tabs{ display:flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
+  .tab-btn{ border:none; background: transparent; padding: 8px 18px; font-size: 13.5px; font-weight: 600; font-family: inherit; color: var(--muted); border-radius: 999px; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
+  .tab-btn.active{ background: var(--ink); color: var(--surface); }
 
-  .content{
-    flex: 1;
-    display:flex;
-    justify-content:center;
-    padding: 34px 16px 60px;
-  }
+  .content{ flex: 1; display:flex; justify-content:center; padding: 34px 16px 60px; }
   .panel{ display:none; width: 100%; max-width: 480px; animation: fadeIn 0.25s ease; }
   .panel.active{ display:block; }
   @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px);} to{ opacity:1; transform: translateY(0);} }
 
-  /* ---------- CARD (registrar) ---------- */
-  .card{
-    background: var(--surface);
-    border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(16,18,22,0.04), 0 12px 32px rgba(16,18,22,0.07);
-    border: 1px solid var(--border);
-    padding: 28px 26px 24px;
-  }
-  .card-eyebrow{
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--red);
-    margin-bottom: 4px;
-  }
-  .card-title{
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 22px;
-  }
+  .card{ background: var(--surface); border-radius: 16px; box-shadow: 0 1px 2px rgba(16,18,22,0.04), 0 12px 32px rgba(16,18,22,0.07); border: 1px solid var(--border); padding: 28px 26px 24px; }
+  .card-eyebrow{ font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 4px; }
+  .card-title{ font-size: 20px; font-weight: 800; margin-bottom: 22px; }
 
   .field{ margin-bottom: 18px; }
-  .field label{
-    display:block;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
+  .field label{ display:block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
   .field .hint{ font-size: 11.5px; color: var(--muted); margin-top: 5px; }
   .field input, .field select, .field textarea{
-    width: 100%;
-    font-size: 15px;
-    padding: 11px 13px;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: inherit;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    width: 100%; font-size: 15px; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px;
+    background: var(--bg); color: var(--ink); font-family: inherit; transition: border-color 0.15s ease, background 0.15s ease;
   }
   .field textarea{ resize: vertical; min-height: 76px; line-height: 1.4; }
-  .field input:focus, .field select:focus, .field textarea:focus{
-    outline: none;
-    border-color: var(--red);
-    background: var(--surface);
-  }
-  .field input.patente{
-    font-family: 'SF Mono', 'Courier New', monospace;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-weight: 700;
-  }
-  .field.error input, .field.error select, .field.error textarea{
-    border-color: var(--red);
-    background: var(--red-tint);
-  }
+  .field input:focus, .field select:focus, .field textarea:focus{ outline: none; border-color: var(--red); background: var(--surface); }
+  .field input.patente{ font-family: 'SF Mono', 'Courier New', monospace; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+  .field.error input, .field.error select, .field.error textarea{ border-color: var(--red); background: var(--red-tint); }
   .field .error-msg{ display:none; font-size: 12px; color: var(--red-dark); margin-top: 5px; font-weight: 600; }
   .field.error .error-msg{ display:block; }
 
   button{ font-family: inherit; cursor: pointer; border: none; border-radius: 10px; }
   button:disabled{ opacity: 0.5; cursor: not-allowed; }
-  .btn-primary{
-    width: 100%;
-    padding: 14px;
-    background: var(--red);
-    color: #fff;
-    font-size: 14.5px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    margin-top: 2px;
-    transition: background 0.15s ease, transform 0.1s ease;
-  }
+  .btn-primary{ width: 100%; padding: 14px; background: var(--red); color: #fff; font-size: 14.5px; font-weight: 700; letter-spacing: 0.01em; margin-top: 2px; transition: background 0.15s ease, transform 0.1s ease; }
   .btn-primary:hover{ background: var(--red-dark); }
   .btn-primary:active{ transform: scale(0.99); }
 
   .btn-row{ display:flex; gap: 10px; margin-top: 4px; }
-  .btn-outline{
-    flex: 1;
-    padding: 13px;
-    background: transparent;
-    color: var(--ink);
-    border: 1.5px solid var(--border);
-    font-size: 14px;
-    font-weight: 600;
-    transition: border-color 0.15s ease;
-  }
+  .btn-outline{ flex: 1; padding: 13px; background: transparent; color: var(--ink); border: 1.5px solid var(--border); font-size: 14px; font-weight: 600; transition: border-color 0.15s ease; }
   .btn-outline:hover{ border-color: var(--ink); }
-  .btn-confirm{
-    flex: 1.5;
-    padding: 13px;
-    background: var(--ink);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-  }
+  .btn-confirm{ flex: 1.5; padding: 13px; background: var(--ink); color: #fff; font-size: 14px; font-weight: 700; }
   .btn-confirm:hover{ background: #000; }
 
   .confirm-view{ display:none; }
   .confirm-view.active{ display:block; animation: fadeIn 0.2s ease; }
   .form-view.hidden{ display:none; }
 
-  .confirm-title{
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    color: var(--red);
-    font-weight: 700;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
-  .confirm-row{
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
-  }
+  .confirm-title{ font-size: 11px; letter-spacing: 0.1em; color: var(--red); font-weight: 700; text-transform: uppercase; margin-bottom: 14px; }
+  .confirm-row{ padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
   .confirm-row .k{ color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
   .confirm-row .v{ font-weight: 600; }
   .confirm-row .v.mono{ font-family:'SF Mono','Courier New', monospace; letter-spacing:0.06em; }
   .confirm-note{ font-size: 12px; color: var(--muted); margin: 14px 0 16px; line-height: 1.5; }
 
-  /* ---------- BUSCAR ---------- */
   .search-head{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
   .search-stats{ font-size: 13px; color: var(--muted); }
   .search-stats b{ color: var(--ink); font-weight: 700; }
-  .btn-export{
-    padding: 9px 14px;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    color: var(--ink);
-    font-size: 12.5px;
-    font-weight: 700;
-    display:flex; align-items:center; gap:6px;
-  }
+  .btn-export{ padding: 9px 14px; background: var(--surface); border: 1.5px solid var(--border); color: var(--ink); font-size: 12.5px; font-weight: 700; display:flex; align-items:center; gap:6px; }
   .btn-export:hover{ border-color: var(--ink); }
 
-  .search-box{
-    position: relative;
-    margin-bottom: 22px;
-  }
-  .search-box svg{
-    position:absolute; left: 15px; top: 50%; transform: translateY(-50%);
-    width: 17px; height: 17px; color: var(--muted);
-  }
-  .search-box input{
-    width: 100%;
-    padding: 13px 14px 13px 42px;
-    border-radius: 12px;
-    border: 1.5px solid var(--border);
-    background: var(--surface);
-    font-size: 15px;
-    font-family: inherit;
-    color: var(--ink);
-    box-shadow: 0 1px 2px rgba(16,18,22,0.03);
-  }
+  .search-box{ position: relative; margin-bottom: 22px; }
+  .search-box svg{ position:absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--muted); }
+  .search-box input{ width: 100%; padding: 13px 14px 13px 42px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); font-size: 15px; font-family: inherit; color: var(--ink); box-shadow: 0 1px 2px rgba(16,18,22,0.03); }
   .search-box input:focus{ outline:none; border-color: var(--red); }
 
   .results-list{ display:flex; flex-direction:column; gap: 10px; }
-  .result-card{
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 18px;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
-  }
+  .result-card{ background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; transition: box-shadow 0.15s ease, transform 0.15s ease; }
   .result-card:hover{ box-shadow: 0 6px 20px rgba(16,18,22,0.08); transform: translateY(-1px); }
   .result-top{ display:flex; justify-content: space-between; align-items:flex-start; gap: 10px; margin-bottom: 8px; }
   .result-vehicle{ font-size: 15px; font-weight: 700; }
-  .result-plate{
-    font-family: 'SF Mono','Courier New', monospace;
-    font-size: 12.5px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    background: var(--red-tint);
-    color: var(--red-dark);
-    padding: 4px 9px;
-    border-radius: 7px;
-    white-space: nowrap;
-  }
-  .result-work{ font-size: 13.5px; color: #3c3f45; line-height: 1.5; margin-bottom: 8px; white-space: pre-wrap; }
+  .result-plate{ font-family: 'SF Mono','Courier New', monospace; font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; background: var(--red-tint); color: var(--red-dark); padding: 4px 9px; border-radius: 7px; white-space: nowrap; }
+  .result-work{ font-size: 13.5px; color: #3c3f45; line-height: 1.5; margin-bottom: 10px; white-space: pre-wrap; }
+  .result-bottom{ display:flex; align-items:center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
   .result-date{ font-size: 11.5px; color: var(--muted); }
+  .btn-mail{ padding: 7px 12px; background: var(--surface); border: 1.5px solid var(--border); color: var(--ink); font-size: 12px; font-weight: 700; display:flex; align-items:center; gap:5px; border-radius: 8px; }
+  .btn-mail:hover{ border-color: var(--red); color: var(--red-dark); }
+  .btn-mail svg{ width:13px; height:13px; }
+  .sent-badge{ font-size: 11.5px; color: var(--green); font-weight: 600; display:flex; align-items:center; gap:4px; }
 
-  .search-empty{
-    text-align:center;
-    padding: 60px 20px;
-    color: var(--muted);
-    font-size: 14px;
-  }
+  .search-empty{ text-align:center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
   .search-empty svg{ width: 34px; height: 34px; margin-bottom: 12px; opacity: 0.5; }
 
-  .section-label{
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 4px 0 12px;
-  }
+  .section-label{ font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 4px 0 12px; }
 
-  /* ---------- TOAST ---------- */
-  .toast{
-    position: fixed;
-    left: 50%;
-    bottom: 26px;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--ink);
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 13.5px;
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    pointer-events: none;
-    z-index: 40;
-    max-width: 90vw;
-    text-align:center;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  }
+  .toast{ position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; opacity: 0; transition: opacity 0.25s ease, transform 0.25s ease; pointer-events: none; z-index: 40; max-width: 90vw; text-align:center; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
   .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.err{ background: var(--red-dark); }
 
-  .config-warning{
-    max-width: 480px; width:100%;
-    background: #FFF6E5; border: 1.5px solid #F0C267; color: #7A5A00;
-    font-size: 13px; line-height: 1.5; padding: 14px 16px; border-radius: 12px; margin: 0 auto 18px;
-  }
+  .config-warning{ max-width: 480px; width:100%; background: #FFF6E5; border: 1.5px solid #F0C267; color: #7A5A00; font-size: 13px; line-height: 1.5; padding: 14px 16px; border-radius: 12px; margin: 0 auto 18px; }
 
-  /* ---------- GATE (PIN de acceso a toda la página) ---------- */
-  .gate-overlay{
-    position: fixed; inset: 0; z-index: 100;
-    background: var(--ink);
-    display:flex; align-items:center; justify-content:center;
-    padding: 20px;
-  }
+  .gate-overlay{ position: fixed; inset: 0; z-index: 100; background: var(--ink); display:flex; align-items:center; justify-content:center; padding: 20px; }
   .gate-overlay.hidden{ display:none; }
-  .gate-box{
-    background: var(--surface);
-    border-radius: 18px;
-    padding: 34px 30px;
-    width: 100%; max-width: 320px;
-    text-align:center;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
-  }
+  .gate-box{ background: var(--surface); border-radius: 18px; padding: 34px 30px; width: 100%; max-width: 320px; text-align:center; box-shadow: 0 24px 60px rgba(0,0,0,0.4); }
   .gate-box svg{ width: 46px; height: 46px; margin-bottom: 14px; }
   .gate-box h2{ font-size: 17px; font-weight: 800; margin: 0 0 4px; }
   .gate-box p{ font-size: 12.5px; color: var(--muted); margin: 0 0 20px; }
-  .gate-box input{
-    width: 100%;
-    font-size: 24px;
-    letter-spacing: 0.6em;
-    text-align: center;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1.5px solid var(--border);
-    font-family: 'SF Mono','Courier New', monospace;
-    margin-bottom: 14px;
-  }
+  .gate-box input{ width: 100%; font-size: 24px; letter-spacing: 0.6em; text-align: center; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); font-family: 'SF Mono','Courier New', monospace; margin-bottom: 14px; }
   .gate-box input:focus{ outline:none; border-color: var(--red); }
-  .gate-box button{
-    width: 100%;
-    padding: 13px;
-    background: var(--red);
-    color: #fff;
-    font-weight: 700;
-    font-size: 14px;
-  }
+  .gate-box button{ width: 100%; padding: 13px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; }
   .gate-box button:hover{ background: var(--red-dark); }
 
   @media (max-width: 480px){
@@ -425,7 +204,6 @@
       ⚠ Falta configurar la conexión a la base de datos. Reemplazá SUPABASE_URL y SUPABASE_ANON_KEY al principio del código.
     </div>
 
-    <!-- ===================== PANEL REGISTRAR ===================== -->
     <section class="panel active" id="panel-registrar">
       <div class="card">
 
@@ -459,6 +237,13 @@
             <div class="error-msg">La patente no tiene un formato válido.</div>
           </div>
 
+          <div class="field" id="field-email">
+            <label for="email">Email del cliente</label>
+            <input type="email" id="email" placeholder="cliente@ejemplo.com" autocomplete="off">
+            <div class="hint">Opcional — si lo cargás, después vas a poder enviarle el detalle del trabajo por mail.</div>
+            <div class="error-msg">Ese email no parece válido.</div>
+          </div>
+
           <div class="field" id="field-trabajo">
             <label for="trabajo">Trabajo realizado</label>
             <textarea id="trabajo" placeholder="Ej: Cambio de pastillas delanteras y rectificado de discos traseros"></textarea>
@@ -473,6 +258,7 @@
           <div class="confirm-row"><div class="k">Marca</div><div class="v" id="cf-marca"></div></div>
           <div class="confirm-row"><div class="k">Modelo</div><div class="v" id="cf-modelo"></div></div>
           <div class="confirm-row"><div class="k">Patente</div><div class="v mono" id="cf-patente"></div></div>
+          <div class="confirm-row"><div class="k">Email del cliente</div><div class="v" id="cf-email"></div></div>
           <div class="confirm-row" style="border-bottom:none;"><div class="k">Trabajo realizado</div><div class="v" id="cf-trabajo" style="font-weight:500;"></div></div>
           <div class="confirm-note">Una vez que aceptes, el registro se guarda y no vas a poder editarlo desde acá.</div>
           <div class="btn-row">
@@ -484,7 +270,6 @@
       </div>
     </section>
 
-    <!-- ===================== PANEL BUSCAR ===================== -->
     <section class="panel" id="panel-buscar">
       <div class="search-head">
         <div class="search-stats" id="searchStats">Cargando…</div>
@@ -512,20 +297,25 @@
 (function(){
 
   // =====================================================================
-  // CONFIGURACIÓN DE SUPABASE — pegá acá los valores de tu proyecto
+  // CONFIGURACIÓN — pegá acá los valores de tus cuentas
   // =====================================================================
   const SUPABASE_URL = 'https://izscbonwudtijodnwrcv.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_GjHzooqkCp55mIRGuytkmw_ewERtoGB';
+
+  const EMAILJS_PUBLIC_KEY  = 'fnFPPWns0U0mVgvQX';
+  const EMAILJS_SERVICE_ID  = 'service_zsxfone';
+  const EMAILJS_TEMPLATE_ID = 'template_36up45w';
   // =====================================================================
 
-  // PIN de acceso a todo el panel — cambialo por el que quieras
-  const ACCESS_PIN = '2468';
+  const ACCESS_PIN = '2468'; // <- PIN de acceso al panel, cambialo si querés
 
   const isConfigured = SUPABASE_URL.indexOf('http') === 0 && SUPABASE_ANON_KEY.length > 20;
+  const isEmailConfigured = EMAILJS_PUBLIC_KEY.length > 10 && EMAILJS_SERVICE_ID.length > 5 && EMAILJS_TEMPLATE_ID.length > 5;
+
   let supabaseClient = null;
   if(isConfigured){ supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+  if(isEmailConfigured && window.emailjs){ window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
 
-  // ---------- GATE ----------
   const gateOverlay = document.getElementById('gateOverlay');
   const gatePin = document.getElementById('gatePin');
   const gateSubmit = document.getElementById('gateSubmit');
@@ -537,26 +327,15 @@
     sessionStorage.setItem('vf_unlocked', '1');
     init();
   }
-
   function tryGate(){
-    if(gatePin.value === ACCESS_PIN){
-      unlock();
-    }else{
-      gatePin.value = '';
-      gatePin.style.borderColor = '#E8555A';
-      gatePin.focus();
-    }
+    if(gatePin.value === ACCESS_PIN){ unlock(); }
+    else{ gatePin.value = ''; gatePin.style.borderColor = '#E8555A'; gatePin.focus(); }
   }
   gateSubmit.addEventListener('click', tryGate);
   gatePin.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryGate(); });
+  if(sessionStorage.getItem('vf_unlocked') === '1'){ unlock(); }
+  else{ setTimeout(()=> gatePin.focus(), 100); }
 
-  if(sessionStorage.getItem('vf_unlocked') === '1'){
-    unlock();
-  }else{
-    setTimeout(()=> gatePin.focus(), 100);
-  }
-
-  // ---------- APP ----------
   function init(){
     const configWarning = document.getElementById('configWarning');
     if(!isConfigured){ configWarning.style.display = 'block'; }
@@ -569,7 +348,6 @@
       setTimeout(()=> toastEl.classList.remove('show'), 3200);
     }
 
-    // ---------- TABS ----------
     const tabBtns = document.querySelectorAll('.tab-btn');
     const panels = document.querySelectorAll('.panel');
     tabBtns.forEach(btn=>{
@@ -589,11 +367,13 @@
     const marcaInput = document.getElementById('marca');
     const modeloInput = document.getElementById('modelo');
     const patenteInput = document.getElementById('patente');
+    const emailInput = document.getElementById('email');
     const trabajoInput = document.getElementById('trabajo');
 
     const fieldMarca = document.getElementById('field-marca');
     const fieldModelo = document.getElementById('field-modelo');
     const fieldPatente = document.getElementById('field-patente');
+    const fieldEmail = document.getElementById('field-email');
     const fieldTrabajo = document.getElementById('field-trabajo');
 
     const btnGuardar = document.getElementById('btnGuardar');
@@ -601,12 +381,10 @@
     const btnAceptar = document.getElementById('btnAceptar');
 
     const PATENTE_REGEX = /^([A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})$/;
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let pending = null;
 
-    if(!isConfigured){
-      btnGuardar.disabled = true;
-      btnGuardar.textContent = 'Falta configurar la base de datos';
-    }
+    if(!isConfigured){ btnGuardar.disabled = true; btnGuardar.textContent = 'Falta configurar la base de datos'; }
 
     patenteInput.addEventListener('input', ()=>{
       patenteInput.value = patenteInput.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -616,6 +394,7 @@
       fieldMarca.classList.remove('error');
       fieldModelo.classList.remove('error');
       fieldPatente.classList.remove('error');
+      fieldEmail.classList.remove('error');
       fieldTrabajo.classList.remove('error');
     }
 
@@ -624,14 +403,16 @@
       const marca = marcaInput.value.trim();
       const modelo = modeloInput.value.trim();
       const patente = patenteInput.value.trim();
+      const email = emailInput.value.trim();
       const trabajo = trabajoInput.value.trim();
       let ok = true;
       if(!marca){ fieldMarca.classList.add('error'); ok = false; }
       if(!modelo){ fieldModelo.classList.add('error'); ok = false; }
       if(!patente || !PATENTE_REGEX.test(patente)){ fieldPatente.classList.add('error'); ok = false; }
+      if(email && !EMAIL_REGEX.test(email)){ fieldEmail.classList.add('error'); ok = false; }
       if(!trabajo){ fieldTrabajo.classList.add('error'); ok = false; }
       if(!ok) return null;
-      return { marca, modelo, patente, trabajo };
+      return { marca, modelo, patente, email, trabajo };
     }
 
     btnGuardar.addEventListener('click', ()=>{
@@ -642,6 +423,7 @@
       document.getElementById('cf-marca').textContent = data.marca;
       document.getElementById('cf-modelo').textContent = data.modelo;
       document.getElementById('cf-patente').textContent = data.patente;
+      document.getElementById('cf-email').textContent = data.email || 'No cargado';
       document.getElementById('cf-trabajo').textContent = data.trabajo;
       formView.classList.add('hidden');
       confirmView.classList.add('active');
@@ -659,11 +441,11 @@
       try{
         const { error } = await supabaseClient
           .from('registros')
-          .insert([{ marca: pending.marca, modelo: pending.modelo, patente: pending.patente, trabajo: pending.trabajo }]);
+          .insert([{ marca: pending.marca, modelo: pending.modelo, patente: pending.patente, email: pending.email || null, trabajo: pending.trabajo }]);
         if(error) throw error;
 
         showToast('Registro guardado correctamente');
-        marcaInput.value = ''; modeloInput.value = ''; patenteInput.value = ''; trabajoInput.value = '';
+        marcaInput.value=''; modeloInput.value=''; patenteInput.value=''; emailInput.value=''; trabajoInput.value='';
         clearErrors();
         pending = null;
         confirmView.classList.remove('active');
@@ -699,6 +481,10 @@
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
+    function formatFecha(iso){
+      return iso ? new Date(iso).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+    }
+
     function renderResults(records){
       lastResults = records;
       if(!records.length){
@@ -708,18 +494,38 @@
         return;
       }
       let html = '';
-      for(const rec of records){
-        const fecha = rec.fecha ? new Date(rec.fecha).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+      records.forEach((rec, idx)=>{
+        const fecha = formatFecha(rec.fecha);
         html += '<div class="result-card">' +
           '<div class="result-top">' +
             '<div class="result-vehicle">' + escapeHtml(rec.marca) + ' ' + escapeHtml(rec.modelo) + '</div>' +
             '<div class="result-plate">' + escapeHtml(rec.patente) + '</div>' +
           '</div>' +
           '<div class="result-work">' + escapeHtml(rec.trabajo || 'Sin detalle de trabajo cargado') + '</div>' +
-          '<div class="result-date">' + fecha + '</div>' +
+          '<div class="result-bottom">' +
+            '<div class="result-date">' + fecha + '</div>' +
+            mailControlHtml(rec, idx) +
+          '</div>' +
+        '</div>';
+      });
+      resultsList.innerHTML = html;
+
+      resultsList.querySelectorAll('.btn-mail').forEach(btn=>{
+        btn.addEventListener('click', ()=> sendMail(parseInt(btn.getAttribute('data-idx'), 10), btn));
+      });
+    }
+
+    function mailControlHtml(rec, idx){
+      if(!rec.email){ return '<span style="font-size:11.5px;color:var(--muted);">Sin email cargado</span>'; }
+      if(rec.email_enviado){
+        return '<div style="display:flex; align-items:center; gap:10px;">' +
+          '<span class="sent-badge">✓ Enviado el ' + formatFecha(rec.email_enviado) + '</span>' +
+          '<button class="btn-mail" data-idx="' + idx + '">Reenviar</button>' +
         '</div>';
       }
-      resultsList.innerHTML = html;
+      return '<button class="btn-mail" data-idx="' + idx + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>' +
+        'Enviar por mail</button>';
     }
 
     async function loadRecent(){
@@ -754,6 +560,50 @@
       searchTimer = setTimeout(()=> runSearch(searchInput.value.trim()), 350);
     });
 
+    // ---------- ENVÍO DE MAIL ----------
+    async function sendMail(idx, btnEl){
+      const rec = lastResults[idx];
+      if(!rec || !rec.email) return;
+      if(!isEmailConfigured){
+        showToast('Falta configurar EmailJS (PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID) en el código', true);
+        return;
+      }
+      const originalText = btnEl.textContent;
+      btnEl.disabled = true;
+      btnEl.textContent = 'Enviando…';
+
+      let trabajoResumen = rec.trabajo || '';
+      if(trabajoResumen.length > 60){ trabajoResumen = trabajoResumen.slice(0, 57) + '…'; }
+      const subject = trabajoResumen + ' - ' + rec.modelo + ' - ' + rec.patente;
+
+      try{
+        await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_email: rec.email,
+          subject: subject,
+          marca: rec.marca,
+          modelo: rec.modelo,
+          patente: rec.patente,
+          trabajo: rec.trabajo,
+          fecha: formatFecha(rec.fecha)
+        });
+
+        const nowIso = new Date().toISOString();
+        const { error: updError } = await supabaseClient
+          .from('registros')
+          .update({ email_enviado: nowIso })
+          .eq('id', rec.id);
+        if(updError) throw updError;
+
+        rec.email_enviado = nowIso;
+        showToast('Mail enviado a ' + rec.email);
+        renderResults(lastResults);
+      }catch(err){
+        showToast('No se pudo enviar el mail: ' + (err && err.text ? err.text : (err && err.message ? err.message : 'error desconocido')), true);
+        btnEl.disabled = false;
+        btnEl.textContent = originalText;
+      }
+    }
+
     function toCsvField(val){
       const s = String(val === undefined || val === null ? '' : val);
       if(/[",\n;]/.test(s)){ return '"' + s.replace(/"/g,'""') + '"'; }
@@ -768,12 +618,14 @@
         if(error) throw error;
         const records = data || [];
         if(!records.length){ showToast('No hay datos para exportar', true); return; }
-        const header = ['fecha','marca','modelo','patente','trabajo'];
+        const header = ['fecha','marca','modelo','patente','email','trabajo','email_enviado'];
         const lines = [header.join(',')];
         for(const rec of records){
           lines.push([
             toCsvField(rec.fecha ? new Date(rec.fecha).toLocaleString('es-AR') : ''),
-            toCsvField(rec.marca), toCsvField(rec.modelo), toCsvField(rec.patente), toCsvField(rec.trabajo)
+            toCsvField(rec.marca), toCsvField(rec.modelo), toCsvField(rec.patente),
+            toCsvField(rec.email), toCsvField(rec.trabajo),
+            toCsvField(rec.email_enviado ? new Date(rec.email_enviado).toLocaleString('es-AR') : '')
           ].join(','));
         }
         const csvContent = '\uFEFF' + lines.join('\n');

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Villarroel Frenos — Relevamiento de vehículos</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --red: #E8555A;
@@ -31,7 +32,6 @@
     min-height:100vh;
   }
 
-  /* ---------- BRAND HEADER ---------- */
   .brand{
     display:flex;
     align-items:center;
@@ -66,7 +66,21 @@
     margin: 10px 0 0;
   }
 
-  /* ---------- CARD ---------- */
+  .config-warning{
+    display:none;
+    max-width: 400px;
+    width: 100%;
+    background: #FFF4E5;
+    border: 1.5px solid #F0B94D;
+    color: #7A5A00;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+  }
+  .config-warning.show{ display:block; }
+
   .ticket{
     position: relative;
     width: 100%;
@@ -151,6 +165,7 @@
     border: none;
     border-radius: 6px;
   }
+  button:disabled{ opacity: 0.55; cursor: not-allowed; }
   .btn-primary{
     width: 100%;
     padding: 14px;
@@ -186,7 +201,6 @@
   }
   .btn-confirm:active{ background: #000; }
 
-  /* Confirmation view */
   .confirm-view{ display:none; }
   .confirm-view.active{ display:block; }
   .form-view.hidden{ display:none; }
@@ -218,7 +232,6 @@
     line-height: 1.5;
   }
 
-  /* Toast */
   .toast{
     position: fixed;
     left: 50%;
@@ -262,7 +275,6 @@
     padding: 6px 10px;
   }
 
-  /* Overlay + modals (admin) */
   .overlay{
     display:none;
     position: fixed;
@@ -397,13 +409,16 @@
     <p>Registrá marca, modelo y patente de cada auto que observes. Cada dato ayuda a mapear qué vehículos circulan en la zona.</p>
   </div>
 
+  <div class="config-warning" id="configWarning">
+    ⚠ Falta configurar la conexión a la base de datos. Reemplazá SUPABASE_URL y SUPABASE_ANON_KEY al principio del código por los valores de tu proyecto de Supabase.
+  </div>
+
   <div class="ticket">
     <div class="ticket-head">
       <span class="label">Registro N°</span>
       <span class="num" id="ticketNum">—</span>
     </div>
 
-    <!-- FORM VIEW -->
     <div class="form-view" id="formView">
       <div class="field" id="field-marca">
         <label for="marca">Marca</label>
@@ -444,7 +459,6 @@
       <button class="btn-primary" id="btnGuardar">Guardar</button>
     </div>
 
-    <!-- CONFIRM VIEW -->
     <div class="confirm-view" id="confirmView">
       <div class="confirm-title">Confirmá estos datos</div>
       <div class="confirm-row"><span class="k">Marca</span><span class="v" id="cf-marca"></span></div>
@@ -469,7 +483,6 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- PIN MODAL -->
 <div class="overlay" id="pinOverlay">
   <div class="modal pin-modal">
     <h3>Acceso restringido</h3>
@@ -482,7 +495,6 @@
   </div>
 </div>
 
-<!-- ADMIN MODAL -->
 <div class="overlay" id="adminOverlay">
   <div class="modal admin-modal">
     <div class="admin-head">
@@ -504,6 +516,25 @@
 
 <script>
 (function(){
+
+  // =====================================================================
+  // CONFIGURACIÓN DE SUPABASE — reemplazá estos dos valores por los tuyos
+  // (Project Settings > API en tu proyecto de Supabase)
+  // =====================================================================
+  const SUPABASE_URL = 'https://izscbonwudtijodnwrcv.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_GjHzooqkCp55mIRGuytkmw_ewERtoGB';
+  // =====================================================================
+
+  const isConfigured = SUPABASE_URL.indexOf('http') === 0 && SUPABASE_ANON_KEY.length > 20;
+  const configWarning = document.getElementById('configWarning');
+  let supabaseClient = null;
+
+  if(isConfigured){
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }else{
+    configWarning.classList.add('show');
+  }
+
   const formView = document.getElementById('formView');
   const confirmView = document.getElementById('confirmView');
   const ticketNum = document.getElementById('ticketNum');
@@ -525,13 +556,17 @@
   const PATENTE_REGEX = /^([A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})$/;
 
   let pending = null;
-  let localTicketCounter = 0;
+
+  if(!isConfigured){
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = 'Falta configurar la base de datos';
+  }
 
   function showToast(msg, isError){
     toastEl.textContent = msg;
     toastEl.classList.toggle('err', !!isError);
     toastEl.classList.add('show');
-    setTimeout(()=> toastEl.classList.remove('show'), 2600);
+    setTimeout(()=> toastEl.classList.remove('show'), 3200);
   }
 
   function clearErrors(){
@@ -546,14 +581,18 @@
   });
 
   async function refreshTotal(){
+    if(!isConfigured){ totalCount.textContent = '—'; ticketNum.textContent = '#—'; return; }
     try{
-      const res = await window.storage.list('registro:', true);
-      const n = (res && res.keys) ? res.keys.length : 0;
+      const { count, error } = await supabaseClient
+        .from('registros')
+        .select('*', { count: 'exact', head: true });
+      if(error) throw error;
+      const n = count || 0;
       totalCount.textContent = n;
       ticketNum.textContent = '#' + String(n + 1).padStart(4,'0');
     }catch(err){
       totalCount.textContent = '—';
-      ticketNum.textContent = '#' + String(localTicketCounter + 1).padStart(4,'0');
+      ticketNum.textContent = '#—';
     }
   }
 
@@ -573,6 +612,10 @@
   }
 
   btnGuardar.addEventListener('click', ()=>{
+    if(!isConfigured){
+      showToast('Falta configurar SUPABASE_URL y SUPABASE_ANON_KEY en el código', true);
+      return;
+    }
     const data = validate();
     if(!data){
       showToast('Revisá los campos marcados en rojo', true);
@@ -596,15 +639,10 @@
     btnAceptar.disabled = true;
     btnAceptar.textContent = 'Guardando…';
     try{
-      const key = 'registro:' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
-      const record = {
-        marca: pending.marca,
-        modelo: pending.modelo,
-        patente: pending.patente,
-        fecha: new Date().toISOString()
-      };
-      const result = await window.storage.set(key, JSON.stringify(record), true);
-      if(!result){ throw new Error('sin resultado'); }
+      const { error } = await supabaseClient
+        .from('registros')
+        .insert([{ marca: pending.marca, modelo: pending.modelo, patente: pending.patente }]);
+      if(error) throw error;
 
       showToast('Guardado — registro ' + ticketNum.textContent);
 
@@ -615,11 +653,10 @@
       pending = null;
       confirmView.classList.remove('active');
       formView.classList.remove('hidden');
-      localTicketCounter++;
       await refreshTotal();
       marcaInput.focus();
     }catch(err){
-      showToast('No se pudo guardar. Probá de nuevo.', true);
+      showToast('No se pudo guardar: ' + (err && err.message ? err.message : 'error desconocido'), true);
     }finally{
       btnAceptar.disabled = false;
       btnAceptar.textContent = 'Aceptar y guardar';
@@ -680,6 +717,10 @@
   btnRefreshAdmin.addEventListener('click', loadAdminData);
 
   function openAdmin(){
+    if(!isConfigured){
+      showToast('Falta configurar la base de datos', true);
+      return;
+    }
     adminOverlay.classList.add('active');
     loadAdminData();
   }
@@ -688,21 +729,13 @@
     adminBody.innerHTML = '<div class="admin-empty">Cargando registros…</div>';
     adminSub.textContent = 'Cargando…';
     try{
-      const listRes = await window.storage.list('registro:', true);
-      const keys = (listRes && listRes.keys) ? listRes.keys : [];
+      const { data, error } = await supabaseClient
+        .from('registros')
+        .select('*')
+        .order('fecha', { ascending: false });
+      if(error) throw error;
 
-      const records = [];
-      for(const k of keys){
-        try{
-          const r = await window.storage.get(k, true);
-          if(r && r.value){
-            const parsed = JSON.parse(r.value);
-            records.push(parsed);
-          }
-        }catch(e){ /* si un registro puntual falla, seguimos con el resto */ }
-      }
-
-      records.sort((a,b)=> new Date(b.fecha) - new Date(a.fecha));
+      const records = data || [];
       lastRecords = records;
 
       adminSub.textContent = records.length + ' registro' + (records.length === 1 ? '' : 's') + ' en total';
